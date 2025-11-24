@@ -196,17 +196,23 @@ correlations_plot <- correlations %>%
 
 correlations_plot %>%
   mutate(is_upper = str_detect(sex2, "F")) %>%
-  mutate(is_diag = (p1 == p2 & sex2 == "F")) %>%
+  mutate(is_diag = (p1 == p2 & sex2 == "F"),
+         sex_label = case_when(
+           p1 == p2 & sex2 == "F" ~ "M versus F",
+           p1 != p2 & sex2 == "F" ~ "F versus F",
+           p1 != p2 & sex2 == "M" ~ "M versus M"
+         )) %>%
   ggplot(aes(ord_p1, ord_p2 %>% fct_rev())) +
-  geom_tile(aes(fill = ifelse(is_upper, rg_females, rg_males)), colour = "black") +
+  geom_tile(aes(fill = ifelse(is_upper, rg_females, rg_males)), colour = "black", linewidth = 0.5) +
   geom_text(aes(label = ifelse(is_upper, rg_females, rg_males)), size = 10) +
   geom_text(aes(label=sign), size = 10, vjust = 1.95) + #added line
+  geom_text(aes(label=sex_label), size = 5, vjust = -1.95, colour = "azure4") +
   coord_fixed() +
   labs(x = "", y = "", fill = "Correlation (rg)") +
   scale_fill_gradient2(low = "purple",
                                 high = "red3", na.value = "grey",
                                 limits = c(-1, 1)) +
-  scale_colour_manual(values = c("black", "white")) +
+  # scale_colour_manual(values = c("black", "white")) +
   # geom_text(aes(label=sign), size = 10, vjust = 1.95) + #added line
   guides(colour = "none") +
   theme_classic() +
@@ -216,13 +222,14 @@ correlations_plot %>%
     axis.text.x = element_text(size = 28, angle = 45, vjust = 1, hjust = 1, colour = "black"),
     axis.text.y = element_text(size = 28, hjust = 0.5, vjust = 0.5, colour = "black"),
     axis.title.x = element_text(size = 16), axis.title.y = element_text(size = 16),
-    legend.title = element_text(size = 22),
-    legend.text = element_text(size = 22)
+    legend.title = element_text(size = 22, margin = margin(b = 20)),
+    legend.text = element_text(size = 20)
   )
 
 # write.table(correlations_plot, here(project_dir, "results", "ldsc_neurodegen", "manuscript_SuppTable.txt"), sep = "\t", row.names = F, quote = F)
 ggsave(here(project_dir,"results","ldsc_neurodegen","global_correlations_sexstr_neurodegen_no_UKB_at_all_no_sexcomb.jpg"), width = 25, height = 15, units = "cm")
 ggsave(here(project_dir,"results","ldsc_neurodegen","global_correlations_sexstr_neurodegen_no_UKB_at_all_no_sexcomb.pdf"), width = 25, height = 15, units = "cm")
+ggsave(here(project_dir,"results","ldsc_neurodegen","global_correlations_sexstr_neurodegen_no_UKB_at_all_no_sexcomb.tif"), width = 25, height = 15, units = "cm", dpi = 300)
 
 #### correlations by sex separately ##### ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
