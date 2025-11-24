@@ -126,7 +126,7 @@ all_table_paper <- mr_results %>%
   )
 
 # write.table(all_table_paper, here(project_dir, "results", "cis_MR_plasma", "main", 
-                              "cisMR_results_all_for_manuscript.txt"), sep = "\t", row.names = F, quote = F)
+#                              "cisMR_results_all_for_manuscript.txt"), sep = "\t", row.names = F, quote = F)
 
 mr_sign_files <- list.files(here(project_dir, "results", "cis_MR_plasma", "main"), pattern = "MR_significant_main_results_immune_pqtls_UKB*", full.names = T)
 mr_sign_results <- lapply(mr_sign_files, function(x) read.table(x, sep = "\t", header = T) %>%
@@ -164,7 +164,7 @@ sign_table_paper <- mr_sign_results %>%
   dplyr::select(-exp_out, -exposure)
   
 # write.table(sign_table_paper, here(project_dir, "results", "cis_MR_plasma", "main", 
-                                  "cisMR_results_significant_for_manuscript.txt"), sep = "\t", row.names = F, quote = F)
+#                                  "cisMR_results_significant_for_manuscript.txt"), sep = "\t", row.names = F, quote = F)
 
 ################################################################################
 
@@ -306,18 +306,20 @@ for (i in 1:length(mr_results_list)) {
     wdt=18
   }
   
-  main <- ggplot(mr_results_comb, aes(x=OR, y=fct_rev(exp_out_ord)), color="black") +
+  # #004488, #BB5566, #DDAA33
+  
+  main <- ggplot(mr_results_comb, aes(x=OR, y=fct_rev(exp_out_ord))) +
     #Add a reference dashed line at 20
     geom_vline(xintercept = 1, linetype = "longdash", colour = "grey") + 
     #Add dot plot and error bars
     geom_errorbar(aes(xmin = low_CI, xmax = upp_CI), width = 0.25) +
-    geom_point(size = 4, aes(colour = sex)) + 
+    geom_point(size = 4, aes(colour = sex, shape = sex)) + 
     ggtitle("MR results (IVW method)") +
     #Add a line above graph
     geom_hline(yintercept=y_intercept_line, size=2) +
     labs(x=stringr::str_c("Odds ratio of ", output_suffix), y = "Exposure") +
     scale_x_continuous(breaks=seq(floor(min(mr_results_comb$low_CI)),ceiling(max(mr_results_comb$upp_CI)),), limits=c(floor(min(mr_results_comb$low_CI)),ceiling(max(mr_results_comb$upp_CI))), expand=c(0,0) ) +
-    scale_shape_manual(values=c(15,16,17,18)) +
+    scale_shape_manual(values=c(16,15,17)) +
     theme_classic(base_size=14) +
     #Remove legend
     #Also remove y-axis line and ticks
@@ -331,7 +333,10 @@ for (i in 1:length(mr_results_list)) {
           axis.line.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.title.y  = element_blank()
-    ) + guides(shape = "none")
+    ) + guides(shape = "none") +
+    scale_color_manual(values = c("Female-specific" = "#DDAA33", "Male-specific" = "#BB5566", "Sex-combined" = "#004488"),
+                       name = "",
+                       guide = guide_legend(override.aes = list(shape = c(16,15,17), size = 4, stroke = 1.5, colour = c("#DDAA33", "#BB5566", "#004488"))))
   
   or_table <- ggplot(data=mr_results_comb) +
     geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= OR_CI), vjust=0, size = 6) +
@@ -352,11 +357,26 @@ for (i in 1:length(mr_results_list)) {
       plot.title = element_text(hjust =0.5) 
     ) 
   
-  # to insert the pvalues in scientific format: label = formatC(FDR, format = "e", digits = 2)
+  # Format FDR values
+  format_fdr <- function(fdr_value) {
+    if (fdr_value > 0.009) {
+      return(sprintf("%.3f", fdr_value))
+    } else {
+      # Convert to scientific notation with superscript
+      exponent <- floor(log10(fdr_value))
+      value <- fdr_value / 10^exponent
+      return(sprintf("%.2f~x~10^{%d}", value, exponent))
+    }
+  }
+
+  # Apply formatting to create formatted FDR column
+  mr_results_comb <- mr_results_comb %>%
+    mutate(FDR_formatted = sapply(FDR, format_fdr))
+
   fdr_table <- ggplot(data=mr_results_comb) +
-    geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= formatC(FDR, format = "e", digits = 2)), vjust=0, size = 6) +
+    geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= FDR_formatted), vjust=0, size = 6, parse = TRUE) +
     #Add a line above graph
-    geom_hline(yintercept=y_intercept_line, size=2) + 
+    geom_hline(yintercept=y_intercept_line, size=2) +
     ggtitle("FDR") +
     xlab("  ") +
     theme_classic(base_size=14) +
@@ -391,11 +411,13 @@ for (i in 1:length(mr_results_list)) {
       plot.title = element_text(hjust =0.5)
     )
   
+  nsnps_title <- expression(paste(italic("n"), " SNPs"))
+  
   nsnps_table <- ggplot(data=mr_results_comb) +
     geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= nsnp), vjust=0, size = 6) +
     #Add a line above graph
     geom_hline(yintercept=y_intercept_line, size=2) + 
-    ggtitle("N SNPs") +
+    ggtitle(nsnps_title) +
     xlab("  ") +
     theme_classic(base_size=14) +
     theme(
@@ -467,8 +489,8 @@ for (i in 1:length(mr_results_list)) {
       plot.title = element_text(hjust = 0.5)
     )
   
-  all <- grid.arrange(tiers_table, names_table, nsnps_table, main, or_table, fdr_table, coloc_table, sde_table, widths=c(5,5,3,8,4.5,3,2,3))
-  ggsave(here(project_dir, "results", "cis_MR_plasma", "figures", stringr::str_c("forest_plot_neurodegen_plasma_pqtls_", output_suffix,"_sde.jpg")), plot = all, width=wdt, height=hgt)
-  ggsave(here(project_dir, "results", "cis_MR_plasma", "figures", stringr::str_c("forest_plot_neurodegen_plasma_pqtls_", output_suffix,"_sde.pdf")), plot = all, width=wdt, height=hgt)
-  
+  all <- grid.arrange(tiers_table, names_table, nsnps_table, main, or_table, fdr_table, coloc_table, sde_table, widths=c(2,5,3,8,4.5,3,2,2))
+  ggsave(here(project_dir, "results", "cis_MR_plasma", "figures", stringr::str_c("forest_plot_neurodegen_plasma_pqtls_", output_suffix,"_sde_final.jpg")), plot = all, width=wdt, height=hgt)
+  ggsave(here(project_dir, "results", "cis_MR_plasma", "figures", stringr::str_c("forest_plot_neurodegen_plasma_pqtls_", output_suffix,"_sde_final.pdf")), plot = all, width=wdt, height=hgt)
+  ggsave(here(project_dir, "results", "cis_MR_plasma", "figures", stringr::str_c("forest_plot_neurodegen_plasma_pqtls_", output_suffix,"_sde_final.tif")), plot = all, width=wdt, height=hgt, dpi = 300)
 }
