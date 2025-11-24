@@ -113,18 +113,18 @@ for (outcome in c("ALS", "PD", "PDnp", "AD", "ADnp")) {
       outcome = "AD_exclude_UKB"
   } 
   
-  main <- ggplot(mr_results, aes(x=OR, y=fct_rev(exp_out_ord), shape=method), color="black") +
+  main <- ggplot(mr_results, aes(x=OR, y=fct_rev(exp_out_ord))) +
     #Add a reference dashed line at 20
     geom_vline(xintercept = 1, linetype = "longdash", colour = "grey") + 
     #Add dot plot and error bars
     geom_errorbar(aes(xmin = low_CI, xmax = upp_CI), width = 0.25) +
-    geom_point(size = 2, aes(colour = sex)) + 
+    geom_point(size = 3, aes(colour = sex, shape = sex)) + 
     ggtitle("MR results (IVW method)") +
     #Add a line above graph
     geom_hline(yintercept=21.6, size=1) + #before = 9.6
     labs(x=stringr::str_c("OR of ", outcome), y = "Exposure") +
     scale_x_continuous(breaks=seq(floor(min(mr_results$low_CI)),ceiling(max(mr_results$upp_CI)),0.4), limits=c(floor(min(mr_results$low_CI)),ceiling(max(mr_results$upp_CI))), expand=c(0,0) ) +
-    scale_shape_manual(values=c(15,16,17,18)) +
+    scale_shape_manual(values=c(16,15,17)) +
     theme_classic(base_size=14) +
     #Remove legend
     #Also remove y-axis line and ticks
@@ -138,7 +138,10 @@ for (outcome in c("ALS", "PD", "PDnp", "AD", "ADnp")) {
           axis.line.y = element_blank(),
           axis.ticks.y = element_blank(),
           axis.title.y  = element_blank()
-    ) + guides(shape = "none")
+    ) + guides(shape = "none") +
+    scale_color_manual(values = c("Female-specific" = "#DDAA33", "Male-specific" = "#BB5566", "Sex-combined" = "#004488"),
+                       name = "",
+                       guide = guide_legend(override.aes = list(shape = c(16,15,17), size = 3, stroke = 1.5, colour = c("#DDAA33", "#BB5566", "#004488"))))
   
   or_table <- ggplot(data=mr_results) +
     geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= OR_CI), vjust=0) +
@@ -159,11 +162,13 @@ for (outcome in c("ALS", "PD", "PDnp", "AD", "ADnp")) {
       plot.title = element_text(hjust =0.5) 
     ) 
   
+  pval_title <- expression(paste(italic("p"), "-value"))
+  
   pval_table <- ggplot(data=mr_results) +
     geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= pval), vjust=0) +
     #Add a line above graph
     geom_hline(yintercept=21.6, size=1) + 
-    ggtitle("p-value") +
+    ggtitle(pval_title) +
     xlab("  ") +
     theme_classic(base_size=14) +
     theme(
@@ -178,11 +183,13 @@ for (outcome in c("ALS", "PD", "PDnp", "AD", "ADnp")) {
       plot.title = element_text(hjust =0.5)
     )
   
+  nsnps_title <- expression(paste(italic("n"), " SNPs"))
+  
   nsnps_table <- ggplot(data=mr_results) +
     geom_text(aes(y=fct_rev(exp_out_ord), x=1, label= nsnp), vjust=0) +
     #Add a line above graph
     geom_hline(yintercept=21.6, size=1) + 
-    ggtitle("SNPs (N)") +
+    ggtitle(nsnps_title) +
     xlab("  ") +
     theme_classic(base_size=14) +
     theme(
@@ -236,8 +243,8 @@ for (outcome in c("ALS", "PD", "PDnp", "AD", "ADnp")) {
     )
   
   all <- grid.arrange(names_table, nsnps_table, main, or_table, pval_table, widths=c(6,2,8,4,2))
-  ggsave(here(project_dir, "results", "genomewide_MR", "figures", str_c("forest_plot_",outcome,".jpg")), plot = all, width=14, height=7)
-  ggsave(here(project_dir, "results", "genomewide_MR", "figures", str_c("forest_plot_",outcome,".pdf")), plot = all, width=14, height=7)
+  ggsave(here(project_dir, "results", "genomewide_MR", "figures", str_c("suppl_forest_plot_",outcome,".jpg")), plot = all, width=14, height=7)
+  ggsave(here(project_dir, "results", "genomewide_MR", "figures", str_c("suppl_forest_plot_",outcome,".pdf")), plot = all, width=14, height=7)
   
 }
  
